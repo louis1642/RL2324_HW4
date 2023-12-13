@@ -148,7 +148,7 @@
     <include>
       <name>aruco_marker</name>
       <uri>model://aruco_marker</uri>
-       <pose>-17 8.35851 0.451317 0 -0 0</pose>
+       <pose>-17 8.35851 0.25 0 -0 0</pose>
     </include>
     
   

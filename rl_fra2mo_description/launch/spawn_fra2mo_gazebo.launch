@@ -4,14 +4,14 @@
   <!-- these are the arguments you can pass this launch file, for example paused:=true -->
   <arg name="paused" default="false"/>
   <arg name="use_sim_time" default="true"/>
-  <arg name="gui" default="true"/>
+  <arg name="gui" default="false"/>
   <arg name="headless" default="false"/>
   <arg name="debug" default="false"/>
   <arg name="x_pos" default="-3.0"/>
   <arg name="y_pos" default="5.0"/>
   <arg name="z_pos" default="0.1"/>
   <!-- yaw angle-->
-  <arg name="yaw" default="-1.57"/>
+  <arg name="yaw" default="3.14"/>
   <env name="GAZEBO_MODEL_PATH" value="$(find rl_racefield)/models:$(optenv GAZEBO_MODEL_PATH)"/>
 
   <!-- We resume the logic in empty_world.launch -->
