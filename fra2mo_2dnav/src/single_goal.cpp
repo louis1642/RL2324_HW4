@@ -30,8 +30,8 @@ int main(int argc, char** argv){
    
   if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
     ROS_INFO("Hooray, the base moved");
-    else
-      ROS_INFO("The base failed to move for some reason");
+  else
+    ROS_INFO("The base failed to move for some reason");
  
    return 0;
  }
