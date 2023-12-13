@@ -14,7 +14,7 @@
 class TF_NAV {
 
     public:
-        explicit TF_NAV(bool allowExploration);
+        TF_NAV(bool allowExploration, int totalNumberOfGoals);
         void run();
         void tf_listener_fun();
         void position_pub();
@@ -33,6 +33,10 @@ class TF_NAV {
         Eigen::Vector3d _cur_pos;
         Eigen::Vector4d _cur_or;
 
+
+        bool _allowExploration;
+        const int _totalNumberOfGoals;
+
 //        Eigen::Vector3d _goal_pos;
 //        Eigen::Vector4d _goal_or;
 //        std::array<Eigen::Vector3d, NUM_GOALS> _goal_pos;
@@ -42,7 +46,6 @@ class TF_NAV {
 
         int goalOrder[NUM_GOALS] = {3, 4, 2, 1};
 
-        bool _allowExploration;
 
         typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 

@@ -1,11 +1,14 @@
 #include "../include/tf_nav.h"
 
-TF_NAV::TF_NAV(bool allowExploration) {
+TF_NAV::TF_NAV(bool allowExploration, const int totalNumberOfGoals)
+        : _totalNumberOfGoals(totalNumberOfGoals) {
 
     _position_pub = _nh.advertise<geometry_msgs::PoseStamped>( "/fra2mo/pose", 1 );
     _cur_pos << 0.0, 0.0, 0.0;
     _cur_or << 0.0, 0.0, 0.0, 1.0;
-    for (int goal_number = 0; goal_number < NUM_GOALS; ++goal_number) {
+    _goal_pos.resize(_totalNumberOfGoals);
+    _goal_or.resize(_totalNumberOfGoals);
+    for (int goal_number = 0; goal_number < _totalNumberOfGoals; ++goal_number) {
         _goal_pos.at(goal_number) << 0.0, 0.0, 0.0;
         _goal_or.at(goal_number) << 0.0, 0.0, 0.0, 1.0;
     }
@@ -61,35 +64,44 @@ void TF_NAV::position_pub() {
 
 void TF_NAV::goal_listener() {
     ros::Rate r( 1 );
-    tf::TransformListener listener[NUM_GOALS];
-    tf::StampedTransform transform[NUM_GOALS];
-    static bool hasLogged[NUM_GOALS];
-    for (bool & hasL : hasLogged) {
-        hasL = false;
+    std::vector<tf::TransformListener*> listener;
+    std::vector<tf::StampedTransform*> transform;
+    listener.resize(_totalNumberOfGoals);
+    transform.resize(_totalNumberOfGoals);
+    for (int i = 0; i < _totalNumberOfGoals; ++i) {
+        listener[i] = new tf::TransformListener();
+        transform[i] = new tf::StampedTransform();
+    }
+
+    static std::vector<bool> hasLogged;
+    hasLogged.resize(_totalNumberOfGoals);
+    for (int i = 0; i < _totalNumberOfGoals; ++i) {
+        hasLogged[i] = false;
     }
 
     while ( ros::ok() )
     {
         // for each of the goals, a listener waits for the tf publisher. Then the transform stores the position and orientation.
         // if it fails, the catch block skips to the next iteration.
-        for (int goal_number = 0; goal_number < NUM_GOALS; ++goal_number) {
+        for (int goal_number = 0; goal_number < _totalNumberOfGoals; ++goal_number) {
             try {
-                listener[goal_number].waitForTransform( "map", "goal_frame_" + std::to_string(goal_number + 1), ros::Time( 0 ), ros::Duration( 10.0 ) );
-                listener[goal_number].lookupTransform( "map", "goal_frame_" + std::to_string(goal_number + 1), ros::Time( 0 ), transform[goal_number] );
+                listener[goal_number]->waitForTransform( "map", "goal_frame_" + std::to_string(goal_number + 1), ros::Time( 0 ), ros::Duration( 10.0 ) );
+                listener[goal_number]->lookupTransform("map", "goal_frame_" + std::to_string(goal_number + 1), ros::Time( 0 ),
+                                                       *(transform[goal_number]));
                 if (!hasLogged[goal_number]) {
                     ROS_INFO("transform[%d]: pos (%f, %f, %f), rot (%f, %f, %f, %f)\n", goal_number,
-                             transform[goal_number].getOrigin().x(),
-                             transform[goal_number].getOrigin().y(),
-                             transform[goal_number].getOrigin().z(),
-                             transform[goal_number].getRotation().x(),
-                             transform[goal_number].getRotation().y(),
-                             transform[goal_number].getRotation().z(),
-                             transform[goal_number].getRotation().w());
+                             transform[goal_number]->getOrigin().x(),
+                             transform[goal_number]->getOrigin().y(),
+                             transform[goal_number]->getOrigin().z(),
+                             transform[goal_number]->getRotation().x(),
+                             transform[goal_number]->getRotation().y(),
+                             transform[goal_number]->getRotation().z(),
+                             transform[goal_number]->getRotation().w());
                     hasLogged[goal_number] = true;
                 }
 
-                _goal_pos.at(goal_number) << transform[goal_number].getOrigin().x(), transform[goal_number].getOrigin().y(), transform[goal_number].getOrigin().z();
-                _goal_or.at(goal_number) << transform[goal_number].getRotation().w(),  transform[goal_number].getRotation().x(), transform[goal_number].getRotation().y(), transform[goal_number].getRotation().z();
+                _goal_pos.at(goal_number) << transform[goal_number]->getOrigin().x(), transform[goal_number]->getOrigin().y(), transform[goal_number]->getOrigin().z();
+                _goal_or.at(goal_number) << transform[goal_number]->getRotation().w(),  transform[goal_number]->getRotation().x(), transform[goal_number]->getRotation().y(), transform[goal_number]->getRotation().z();
 
             } catch( tf::TransformException &ex ) {
                 ROS_ERROR("goal_number = %d: %s", goal_number, ex.what());
@@ -122,7 +134,7 @@ void TF_NAV::send_goal() {
                 ROS_INFO("Waiting for the move_base action server to come up");
             }
 
-            for (int goal_index = 0; goal_index < NUM_GOALS; ++goal_index) {
+            for (int goal_index = 0; goal_index < _totalNumberOfGoals; ++goal_index) {
                 goal.target_pose.header.frame_id = "map";
                 goal.target_pose.header.stamp = ros::Time::now();
 
@@ -193,7 +205,7 @@ void TF_NAV::run() {
 
 int main( int argc, char** argv ) {
     ros::init(argc, argv, "tf_navigation");
-    TF_NAV tfnav(false);
+    TF_NAV tfnav(false, 4);
     tfnav.run();
 
     return 0;
