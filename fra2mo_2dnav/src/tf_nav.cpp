@@ -163,6 +163,8 @@ void TF_NAV::send_goal() {
                     goal.target_pose.pose.orientation.x = _goal_or.at(goal_index)[1];
                     goal.target_pose.pose.orientation.y = _goal_or.at(goal_index)[2];
                     goal.target_pose.pose.orientation.z = _goal_or.at(goal_index)[3];
+
+                    ROS_INFO("Sending goal %d", goal_index);
                 }
                 ac.sendGoal(goal);
 
