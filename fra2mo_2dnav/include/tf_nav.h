@@ -5,6 +5,10 @@
 #include "Eigen/Dense"
 #include <move_base_msgs/MoveBaseAction.h>
 #include <actionlib/client/simple_action_client.h>
+#include <string>
+#include <array>
+
+#define NUM_GOALS 4
 
 class TF_NAV {
 
@@ -27,9 +31,12 @@ class TF_NAV {
         Eigen::Vector3d _cur_pos;
         Eigen::Vector4d _cur_or;
 
-        Eigen::Vector3d _goal_pos;
-        Eigen::Vector4d _goal_or;
-        typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
+//        Eigen::Vector3d _goal_pos;
+//        Eigen::Vector4d _goal_or;
+        std::array<Eigen::Vector3d, NUM_GOALS> _goal_pos;
+        std::array<Eigen::Vector4d, NUM_GOALS> _goal_or;
+
+    typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
 
 };
