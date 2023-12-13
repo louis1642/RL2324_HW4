@@ -123,8 +123,11 @@ void TF_NAV::send_goal() {
 
     while ( ros::ok() )
     {
-        std::cout<<"\nInsert 1 to send goal from TF "<<std::endl;
-        std::cout<<"Insert 2 to send home position goal "<<std::endl;
+        std::cout<<"\nInsert 1 to send goal from TF ";
+        if (_allowExploration) {
+            std::cout << "for exploration";
+        }
+        std::cout<<"\nInsert 2 to send home position goal "<<std::endl;
 //        std::cout<<"Insert your choice"<<std::endl;
         std::cin>>cmd;
 
@@ -138,16 +141,29 @@ void TF_NAV::send_goal() {
                 goal.target_pose.header.frame_id = "map";
                 goal.target_pose.header.stamp = ros::Time::now();
 
-                goal.target_pose.pose.position.x = _goal_pos.at(goalOrder[goal_index] - 1)[0];
-                goal.target_pose.pose.position.y = _goal_pos.at(goalOrder[goal_index] - 1)[1];
-                goal.target_pose.pose.position.z = _goal_pos.at(goalOrder[goal_index] - 1)[2];
+                if (!_allowExploration) {
+                    // if not in exploration mode, the order of the goals is the one specified in class header
+                    goal.target_pose.pose.position.x = _goal_pos.at(goalOrder[goal_index] - 1)[0];
+                    goal.target_pose.pose.position.y = _goal_pos.at(goalOrder[goal_index] - 1)[1];
+                    goal.target_pose.pose.position.z = _goal_pos.at(goalOrder[goal_index] - 1)[2];
 
-                goal.target_pose.pose.orientation.w = _goal_or.at(goalOrder[goal_index] - 1)[0];
-                goal.target_pose.pose.orientation.x = _goal_or.at(goalOrder[goal_index] - 1)[1];
-                goal.target_pose.pose.orientation.y = _goal_or.at(goalOrder[goal_index] - 1)[2];
-                goal.target_pose.pose.orientation.z = _goal_or.at(goalOrder[goal_index] - 1)[3];
+                    goal.target_pose.pose.orientation.w = _goal_or.at(goalOrder[goal_index] - 1)[0];
+                    goal.target_pose.pose.orientation.x = _goal_or.at(goalOrder[goal_index] - 1)[1];
+                    goal.target_pose.pose.orientation.y = _goal_or.at(goalOrder[goal_index] - 1)[2];
+                    goal.target_pose.pose.orientation.z = _goal_or.at(goalOrder[goal_index] - 1)[3];
 
-                ROS_INFO("Sending goal %d", goalOrder[goal_index]);
+                    ROS_INFO("Sending goal %d", goalOrder[goal_index]);
+                } else {
+                    // if in exploration mode, the order is 1, ..., _totalNumberOfGoals
+                    goal.target_pose.pose.position.x = _goal_pos.at(goal_index)[0];
+                    goal.target_pose.pose.position.y = _goal_pos.at(goal_index)[1];
+                    goal.target_pose.pose.position.z = _goal_pos.at(goal_index)[2];
+
+                    goal.target_pose.pose.orientation.w = _goal_or.at(goal_index)[0];
+                    goal.target_pose.pose.orientation.x = _goal_or.at(goal_index)[1];
+                    goal.target_pose.pose.orientation.y = _goal_or.at(goal_index)[2];
+                    goal.target_pose.pose.orientation.z = _goal_or.at(goal_index)[3];
+                }
                 ac.sendGoal(goal);
 
                 ac.waitForResult();
@@ -205,7 +221,12 @@ void TF_NAV::run() {
 
 int main( int argc, char** argv ) {
     ros::init(argc, argv, "tf_navigation");
-    TF_NAV tfnav(false, 4);
+    ros::NodeHandle nh;
+    bool allowExploration;
+    int numOfGoals;
+    nh.getParam("allowExploration", allowExploration);
+    nh.getParam("numberOfGoals", numOfGoals);
+    TF_NAV tfnav(allowExploration, numOfGoals);
     tfnav.run();
 
     return 0;
