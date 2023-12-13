@@ -171,7 +171,8 @@ void TF_NAV::send_goal() {
                 ac.waitForResult();
 
                 if (ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
-                    ROS_INFO("The mobile robot arrived in the TF goal number %d", goalOrder[goal_index]);
+                    // conditional operator to print the correct message
+                    ROS_INFO("The mobile robot arrived in the TF goal number %d", (!_allowExploration) ? goalOrder[goal_index] : goal_index);
                 } else {
                     ROS_INFO("The base failed to move for some reason");
                     // skip to the next iteration (skip to the next goal)
