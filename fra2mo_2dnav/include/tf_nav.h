@@ -7,13 +7,14 @@
 #include <actionlib/client/simple_action_client.h>
 #include <string>
 #include <array>
+#include <vector>
 
 #define NUM_GOALS 4
 
 class TF_NAV {
 
     public:
-        TF_NAV();
+        explicit TF_NAV(bool allowExploration);
         void run();
         void tf_listener_fun();
         void position_pub();
@@ -34,12 +35,16 @@ class TF_NAV {
 
 //        Eigen::Vector3d _goal_pos;
 //        Eigen::Vector4d _goal_or;
-        std::array<Eigen::Vector3d, NUM_GOALS> _goal_pos;
-        std::array<Eigen::Vector4d, NUM_GOALS> _goal_or;
+//        std::array<Eigen::Vector3d, NUM_GOALS> _goal_pos;
+//        std::array<Eigen::Vector4d, NUM_GOALS> _goal_or;
+        std::vector<Eigen::Vector3d> _goal_pos;
+        std::vector<Eigen::Vector4d> _goal_or;
 
         int goalOrder[NUM_GOALS] = {3, 4, 2, 1};
 
-    typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
+        bool _allowExploration;
+
+        typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
 
 };

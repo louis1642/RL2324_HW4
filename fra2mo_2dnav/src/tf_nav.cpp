@@ -1,6 +1,6 @@
 #include "../include/tf_nav.h"
 
-TF_NAV::TF_NAV() {
+TF_NAV::TF_NAV(bool allowExploration) {
 
     _position_pub = _nh.advertise<geometry_msgs::PoseStamped>( "/fra2mo/pose", 1 );
     _cur_pos << 0.0, 0.0, 0.0;
@@ -12,6 +12,7 @@ TF_NAV::TF_NAV() {
     // updated home position according to the homework
     _home_pos << -3.0, 5.0, 0.0;
     _home_rot << 0, 0, -0.7068252, 0.7073883;   // yaw = -90°
+    _allowExploration = allowExploration;
 }
 
 void TF_NAV::tf_listener_fun() {
@@ -192,7 +193,7 @@ void TF_NAV::run() {
 
 int main( int argc, char** argv ) {
     ros::init(argc, argv, "tf_navigation");
-    TF_NAV tfnav;
+    TF_NAV tfnav(false);
     tfnav.run();
 
     return 0;
