@@ -24,6 +24,8 @@
     <arg name="headless" value="$(arg headless)"/>
   </include>
 
+  <!-- goal tf spawned -->
+<include file="$(find rl_fra2mo_description)/launch/goal_fra2mo_gazebo.launch"/>
 
 <!-- urdf xml robot description loaded on the Parameter Server-->  
 
