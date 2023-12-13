@@ -7,9 +7,11 @@
   <arg name="gui" default="true"/>
   <arg name="headless" default="false"/>
   <arg name="debug" default="false"/>
-  <arg name="x_pos" default="-18.0"/>
-  <arg name="y_pos" default="2.0"/>
+  <arg name="x_pos" default="-3.0"/>
+  <arg name="y_pos" default="5.0"/>
   <arg name="z_pos" default="0.1"/>
+  <!-- yaw angle-->
+  <arg name="yaw" default="-1.57"/>
   <env name="GAZEBO_MODEL_PATH" value="$(find rl_racefield)/models:$(optenv GAZEBO_MODEL_PATH)"/>
 
   <!-- We resume the logic in empty_world.launch -->
@@ -29,7 +31,7 @@
 
   <!-- Run a python script to the send a service call to gazebo_ros to spawn a URDF robot -->
   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-	args="-urdf -model fra2mo -x $(arg x_pos) -y $(arg y_pos) -z $(arg z_pos) -param robot_description"/> 
+	args="-urdf -model fra2mo -x $(arg x_pos) -y $(arg y_pos) -z$(arg z_pos) -Y $(arg yaw) -param robot_description"/> 
 
 
 <!-- GUI Controls -->

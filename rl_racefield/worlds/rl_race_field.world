@@ -74,7 +74,8 @@
 
     <include>
       <name>obstacle_09</name>
-      <pose> -5 10 0.1 0 0 3.14159</pose>
+       <!-- obstacle_09 position modified  -->
+      <pose> -17 9 0.1 0 0 3.14159</pose>
       <uri>model://obstacle_09</uri>
     </include>
 
@@ -144,11 +145,11 @@
     </include>
 
     <!-- AR markers -->
-    <!--include>
-      <name>tool_0_tag</name>
-      <uri>model://marker_0</uri>
-      <pose>-1 -0.5 1 0 1.57 0</pose>
-    </include-->
+    <include>
+      <name>aruco_marker</name>
+      <uri>model://aruco_marker</uri>
+       <pose>-17 8.35851 0.451317 0 -0 0</pose>
+    </include>
     
   
   </world>
