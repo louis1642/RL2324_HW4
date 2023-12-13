@@ -3,6 +3,8 @@
   <arg name="AllowExplorationArg" value="false"/>
   <param name="allowExploration" type="bool" value="$(arg AllowExplorationArg)"/>
   
+  <!-- Goal frame for Aruco visualization  -->
+  <!-- <node pkg="tf" type="static_transform_publisher" name="marker_frame_publisher" args="-15 8 0.1 3.14 0 0 map goal_frame_4 100" /> -->
 
   <group unless="$(arg AllowExplorationArg)">
     <param name="numberOfGoals" value="4"/>
