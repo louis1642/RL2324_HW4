@@ -27,6 +27,7 @@ class TF_NAV {
         ros::Publisher _position_pub;
 
         Eigen::Vector3d _home_pos;
+        Eigen::Vector4d _home_rot;
 
         Eigen::Vector3d _cur_pos;
         Eigen::Vector4d _cur_or;
@@ -35,6 +36,8 @@ class TF_NAV {
 //        Eigen::Vector4d _goal_or;
         std::array<Eigen::Vector3d, NUM_GOALS> _goal_pos;
         std::array<Eigen::Vector4d, NUM_GOALS> _goal_or;
+
+        int goalOrder[NUM_GOALS] = {3, 4, 2, 1};
 
     typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 

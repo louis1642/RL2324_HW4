@@ -11,7 +11,7 @@ TF_NAV::TF_NAV() {
     }
     // updated home position according to the homework
     _home_pos << -3.0, 5.0, 0.0;
-    // ignoring starting rotation?
+    _home_rot << 0, 0, -0.7068252, 0.7073883;   // yaw = -90°
 }
 
 void TF_NAV::tf_listener_fun() {
@@ -60,8 +60,12 @@ void TF_NAV::position_pub() {
 
 void TF_NAV::goal_listener() {
     ros::Rate r( 1 );
-    tf::TransformListener listener[4];
-    tf::StampedTransform transform[4];
+    tf::TransformListener listener[NUM_GOALS];
+    tf::StampedTransform transform[NUM_GOALS];
+    static bool hasLogged[NUM_GOALS];
+    for (bool & hasL : hasLogged) {
+        hasL = false;
+    }
 
     while ( ros::ok() )
     {
@@ -69,15 +73,19 @@ void TF_NAV::goal_listener() {
         // if it fails, the catch block skips to the next iteration.
         for (int goal_number = 0; goal_number < NUM_GOALS; ++goal_number) {
             try {
-                listener[goal_number].waitForTransform( "map", "static_frame_" + std::to_string(goal_number + 1), ros::Time( 0 ), ros::Duration( 10.0 ) );
-                listener[goal_number].lookupTransform( "map", "static_frame_" + std::to_string(goal_number + 1), ros::Time( 0 ), transform[goal_number] );
-                ROS_INFO("transform[%d]: pos (%f, %f, %f), rot (%f, %f, %f, %f)\n", goal_number, transform[goal_number].getOrigin().x(),
-                         transform[goal_number].getOrigin().y(),
-                         transform[goal_number].getOrigin().z(),
-                         transform[goal_number].getRotation().x(),
-                         transform[goal_number].getRotation().y(),
-                         transform[goal_number].getRotation().z(),
-                         transform[goal_number].getRotation().w());
+                listener[goal_number].waitForTransform( "map", "goal_frame_" + std::to_string(goal_number + 1), ros::Time( 0 ), ros::Duration( 10.0 ) );
+                listener[goal_number].lookupTransform( "map", "goal_frame_" + std::to_string(goal_number + 1), ros::Time( 0 ), transform[goal_number] );
+                if (!hasLogged[goal_number]) {
+                    ROS_INFO("transform[%d]: pos (%f, %f, %f), rot (%f, %f, %f, %f)\n", goal_number,
+                             transform[goal_number].getOrigin().x(),
+                             transform[goal_number].getOrigin().y(),
+                             transform[goal_number].getOrigin().z(),
+                             transform[goal_number].getRotation().x(),
+                             transform[goal_number].getRotation().y(),
+                             transform[goal_number].getRotation().z(),
+                             transform[goal_number].getRotation().w());
+                    hasLogged[goal_number] = true;
+                }
 
                 _goal_pos.at(goal_number) << transform[goal_number].getOrigin().x(), transform[goal_number].getOrigin().y(), transform[goal_number].getOrigin().z();
                 _goal_or.at(goal_number) << transform[goal_number].getRotation().w(),  transform[goal_number].getRotation().x(), transform[goal_number].getRotation().y(), transform[goal_number].getRotation().z();
@@ -104,7 +112,7 @@ void TF_NAV::send_goal() {
     {
         std::cout<<"\nInsert 1 to send goal from TF "<<std::endl;
         std::cout<<"Insert 2 to send home position goal "<<std::endl;
-        std::cout<<"Inser your choice"<<std::endl;
+//        std::cout<<"Insert your choice"<<std::endl;
         std::cin>>cmd;
 
         if ( cmd == 1) {
@@ -113,29 +121,29 @@ void TF_NAV::send_goal() {
                 ROS_INFO("Waiting for the move_base action server to come up");
             }
 
-            for (int goal_number = 0; goal_number < NUM_GOALS; ++goal_number) {
+            for (int goal_index = 0; goal_index < NUM_GOALS; ++goal_index) {
                 goal.target_pose.header.frame_id = "map";
                 goal.target_pose.header.stamp = ros::Time::now();
 
-                goal.target_pose.pose.position.x = _goal_pos.at(goal_number)[0];
-                goal.target_pose.pose.position.y = _goal_pos.at(goal_number)[1];
-                goal.target_pose.pose.position.z = _goal_pos.at(goal_number)[2];
+                goal.target_pose.pose.position.x = _goal_pos.at(goalOrder[goal_index] - 1)[0];
+                goal.target_pose.pose.position.y = _goal_pos.at(goalOrder[goal_index] - 1)[1];
+                goal.target_pose.pose.position.z = _goal_pos.at(goalOrder[goal_index] - 1)[2];
 
-                goal.target_pose.pose.orientation.w = _goal_or.at(goal_number)[0];
-                goal.target_pose.pose.orientation.x = _goal_or.at(goal_number)[1];
-                goal.target_pose.pose.orientation.y = _goal_or.at(goal_number)[2];
-                goal.target_pose.pose.orientation.z = _goal_or.at(goal_number)[3];
+                goal.target_pose.pose.orientation.w = _goal_or.at(goalOrder[goal_index] - 1)[0];
+                goal.target_pose.pose.orientation.x = _goal_or.at(goalOrder[goal_index] - 1)[1];
+                goal.target_pose.pose.orientation.y = _goal_or.at(goalOrder[goal_index] - 1)[2];
+                goal.target_pose.pose.orientation.z = _goal_or.at(goalOrder[goal_index] - 1)[3];
 
-                ROS_INFO("Sending goal");
+                ROS_INFO("Sending goal %d", goalOrder[goal_index]);
                 ac.sendGoal(goal);
 
                 ac.waitForResult();
 
                 if (ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
-                    ROS_INFO("The mobile robot arrived in the TF goal");
+                    ROS_INFO("The mobile robot arrived in the TF goal number %d", goalOrder[goal_index]);
                 } else {
                     ROS_INFO("The base failed to move for some reason");
-                    // skip to the next iteration
+                    // skip to the next iteration (skip to the next goal)
                     continue;
                 }
             }
@@ -151,10 +159,10 @@ void TF_NAV::send_goal() {
             goal.target_pose.pose.position.y = _home_pos[1];
             goal.target_pose.pose.position.z = _home_pos[2];
 
-            goal.target_pose.pose.orientation.w = 1.0;
-            goal.target_pose.pose.orientation.x = 0.0;
-            goal.target_pose.pose.orientation.y = 0.0;
-            goal.target_pose.pose.orientation.z = 0.0;
+            goal.target_pose.pose.orientation.w = _home_rot[3];
+            goal.target_pose.pose.orientation.x = _home_rot[0];
+            goal.target_pose.pose.orientation.y = _home_rot[1];
+            goal.target_pose.pose.orientation.z = _home_rot[2];
 
             ROS_INFO("Sending HOME position as goal");
             ac.sendGoal(goal);
