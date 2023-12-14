@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="AllowExplorationArg" value="false"/>
+  <arg name="AllowExplorationArg" value="true"/>
   <param name="allowExploration" type="bool" value="$(arg AllowExplorationArg)"/>
   
 
