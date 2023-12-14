@@ -3,5 +3,6 @@
     <include file="$(find rl_fra2mo_description)/launch/spawn_fra2mo_gazebo.launch"/>
     <include file="$(find rl_fra2mo_description)/launch/gmapping.launch"/>
     <include file="$(find fra2mo_2dnav)/launch/move_base.launch"/>
+    <include file="$(find aruco_ros)/launch/usb_cam_aruco.launch"/>
 
 </launch>

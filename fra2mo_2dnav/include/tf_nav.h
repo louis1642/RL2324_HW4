@@ -11,6 +11,11 @@
 
 #define NUM_GOALS 4
 
+std::vector<double> aruco_pose(7,0.0);
+tf::Transform tfAruco;
+
+void arucoPoseCallback(const geometry_msgs::PoseStamped & msg);
+
 class TF_NAV {
 
     public:
@@ -26,12 +31,15 @@ class TF_NAV {
         ros::NodeHandle _nh;
 
         ros::Publisher _position_pub;
+        ros::Subscriber _aruco_pose_sub;
 
         Eigen::Vector3d _home_pos;
         Eigen::Vector4d _home_rot;
 
         Eigen::Vector3d _cur_pos;
         Eigen::Vector4d _cur_or;
+
+        tf::Transform _tfBaseCamera;    // transformation matrix from camera to base
 
 
         bool _allowExploration;

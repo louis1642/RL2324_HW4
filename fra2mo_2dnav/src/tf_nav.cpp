@@ -1,9 +1,28 @@
 #include "../include/tf_nav.h"
 
+void arucoPoseCallback(const geometry_msgs::PoseStamped & msg)
+{
+    tf::Vector3 ArucoPosition(
+        msg.pose.position.x,msg.pose.position.y,msg.pose.position.z);
+    tf::Quaternion ArucoOrientation(
+        msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z,msg.pose.orientation.w);
+    tfAruco = tf::Transform(ArucoOrientation,ArucoPosition);
+
+    Eigen::Vector3d ar_pos;
+    Eigen::Vector4d ar_or;
+    ar_pos << tfAruco.getOrigin().x(), tfAruco.getOrigin().y(), tfAruco.getOrigin().z();
+    ar_or << tfAruco.getRotation().w(),  tfAruco.getRotation().x(), tfAruco.getRotation().y(), tfAruco.getRotation().z();
+    // DEBUG
+    // std::cout << std::endl << ar_pos << std::endl << ar_or << std::endl;
+}
+
 TF_NAV::TF_NAV(bool allowExploration, const int totalNumberOfGoals)
         : _totalNumberOfGoals(totalNumberOfGoals) {
 
     _position_pub = _nh.advertise<geometry_msgs::PoseStamped>( "/fra2mo/pose", 1 );
+    // subscribe to the aruco single pose topic
+    _aruco_pose_sub = _nh.subscribe("/aruco_single/pose", 1, arucoPoseCallback);
+
     _cur_pos << 0.0, 0.0, 0.0;
     _cur_or << 0.0, 0.0, 0.0, 1.0;
     _goal_pos.resize(_totalNumberOfGoals);
@@ -16,6 +35,23 @@ TF_NAV::TF_NAV(bool allowExploration, const int totalNumberOfGoals)
     _home_pos << -3.0, 5.0, 0.0;
     _home_rot << 0, 0, -0.7068252, 0.7073883;   // yaw = -90°
     _allowExploration = allowExploration;
+
+    // acquires the transformation matrix between camera and base_footprint
+    ros::Rate r( 5 );
+    tf::TransformListener listener;
+    tf::StampedTransform tfBaseCamera;
+
+    try {
+        listener.waitForTransform( "base_footprint", "camera_link", ros::Time(0), ros::Duration(10.0) );
+        listener.lookupTransform( "base_footprint", "camera_link", ros::Time(0), tfBaseCamera );
+        ROS_INFO("AAAAAA::::: %f",tfBaseCamera.getOrigin().z());
+    } catch ( tf::TransformException &ex ) {
+        ROS_ERROR("%s", ex.what());
+        r.sleep();
+        return;
+    }
+
+    _tfBaseCamera = tfBaseCamera;
 }
 
 void TF_NAV::tf_listener_fun() {
