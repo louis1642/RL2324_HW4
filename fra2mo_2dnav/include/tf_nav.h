@@ -12,9 +12,9 @@
 #define NUM_GOALS 4
 
 std::vector<double> aruco_pose(7,0.0);
-tf::Transform tfAruco;
+//tf::Transform tfAruco;
 
-void arucoPoseCallback(const geometry_msgs::PoseStamped & msg);
+//void arucoPoseCallback(const geometry_msgs::PoseStamped & msg);
 
 class TF_NAV {
 
@@ -25,8 +25,10 @@ class TF_NAV {
         void position_pub();
         void goal_listener();
         void send_goal();
+        void arucoPoseCallback(const geometry_msgs::PoseStamped & msg);
 
-    private:
+
+private:
 
         ros::NodeHandle _nh;
 
@@ -40,15 +42,14 @@ class TF_NAV {
         Eigen::Vector4d _cur_or;
 
         tf::Transform _tfBaseCamera;    // transformation matrix from camera to base
+        tf::Transform _tfAruco;
 
 
         bool _allowExploration;
         const int _totalNumberOfGoals;
 
-//        Eigen::Vector3d _goal_pos;
-//        Eigen::Vector4d _goal_or;
-//        std::array<Eigen::Vector3d, NUM_GOALS> _goal_pos;
-//        std::array<Eigen::Vector4d, NUM_GOALS> _goal_or;
+        Eigen::Vector3d _aruco_goal_pos;
+        Eigen::Vector4d _aruco_goal_or;
         std::vector<Eigen::Vector3d> _goal_pos;
         std::vector<Eigen::Vector4d> _goal_or;
 

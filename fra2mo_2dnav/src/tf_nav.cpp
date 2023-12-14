@@ -1,17 +1,17 @@
 #include "../include/tf_nav.h"
 
-void arucoPoseCallback(const geometry_msgs::PoseStamped & msg)
+void TF_NAV::arucoPoseCallback(const geometry_msgs::PoseStamped & msg)
 {
     tf::Vector3 ArucoPosition(
         msg.pose.position.x,msg.pose.position.y,msg.pose.position.z);
     tf::Quaternion ArucoOrientation(
         msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z,msg.pose.orientation.w);
-    tfAruco = tf::Transform(ArucoOrientation,ArucoPosition);
+    _tfAruco = tf::Transform(ArucoOrientation,ArucoPosition);
 
-    Eigen::Vector3d ar_pos;
-    Eigen::Vector4d ar_or;
-    ar_pos << tfAruco.getOrigin().x(), tfAruco.getOrigin().y(), tfAruco.getOrigin().z();
-    ar_or << tfAruco.getRotation().w(),  tfAruco.getRotation().x(), tfAruco.getRotation().y(), tfAruco.getRotation().z();
+//    Eigen::Vector3d ar_pos;
+//    Eigen::Vector4d ar_or;
+//    ar_pos << _tfAruco.getOrigin().x(), _tfAruco.getOrigin().y(), _tfAruco.getOrigin().z();
+//    ar_or << _tfAruco.getRotation().w(),  _tfAruco.getRotation().x(), _tfAruco.getRotation().y(), _tfAruco.getRotation().z();
     // DEBUG
     // std::cout << std::endl << ar_pos << std::endl << ar_or << std::endl;
 }
@@ -21,7 +21,7 @@ TF_NAV::TF_NAV(bool allowExploration, const int totalNumberOfGoals)
 
     _position_pub = _nh.advertise<geometry_msgs::PoseStamped>( "/fra2mo/pose", 1 );
     // subscribe to the aruco single pose topic
-    _aruco_pose_sub = _nh.subscribe("/aruco_single/pose", 1, arucoPoseCallback);
+    _aruco_pose_sub = _nh.subscribe("/aruco_single/pose", 1, &TF_NAV::arucoPoseCallback, this);
 
     _cur_pos << 0.0, 0.0, 0.0;
     _cur_or << 0.0, 0.0, 0.0, 1.0;
@@ -44,7 +44,6 @@ TF_NAV::TF_NAV(bool allowExploration, const int totalNumberOfGoals)
     try {
         listener.waitForTransform( "base_footprint", "camera_link", ros::Time(0), ros::Duration(10.0) );
         listener.lookupTransform( "base_footprint", "camera_link", ros::Time(0), tfBaseCamera );
-        ROS_INFO("AAAAAA::::: %f",tfBaseCamera.getOrigin().z());
     } catch ( tf::TransformException &ex ) {
         ROS_ERROR("%s", ex.what());
         r.sleep();
@@ -58,7 +57,7 @@ void TF_NAV::tf_listener_fun() {
     ros::Rate r( 5 );
     tf::TransformListener listener;
     tf::StampedTransform transform;
-    
+
     while ( ros::ok() )
     {
         try {
@@ -70,7 +69,7 @@ void TF_NAV::tf_listener_fun() {
             r.sleep();
             continue;
         }
-        
+
         _cur_pos << transform.getOrigin().x(), transform.getOrigin().y(), transform.getOrigin().z();
         _cur_or << transform.getRotation().w(),  transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z();
         position_pub();
@@ -103,6 +102,7 @@ void TF_NAV::goal_listener() {
     //std::vector<tf::TransformListener*> listener;
     tf::TransformListener listener;
     std::vector<tf::StampedTransform*> transform;
+    tf::StampedTransform tfGoalAruco;
     //listener.resize(_totalNumberOfGoals);
     transform.resize(_totalNumberOfGoals);
     for (int i = 0; i < _totalNumberOfGoals; ++i) {
@@ -116,8 +116,7 @@ void TF_NAV::goal_listener() {
         hasLogged[i] = false;
     }
 
-    while ( ros::ok() )
-    {
+    while ( ros::ok() ) {
         // for each of the goals, a listener waits for the tf publisher. Then the transform stores the position and orientation.
         // if it fails, the catch block skips to the next iteration.
         for (int goal_number = 0; goal_number < _totalNumberOfGoals; ++goal_number) {
@@ -147,10 +146,22 @@ void TF_NAV::goal_listener() {
             }
         }
 
+        try {
+            listener.waitForTransform( "map", "goal_marker_frame", ros::Time( 0 ), ros::Duration( 10.0 ) );
+            listener.lookupTransform("map", "goal_marker_frame", ros::Time( 0 ),
+                                     tfGoalAruco);
 
+            _aruco_goal_pos << tfGoalAruco.getOrigin().x(), tfGoalAruco.getOrigin().y(), tfGoalAruco.getOrigin().z();
+            _aruco_goal_or << tfGoalAruco.getRotation().w(),  tfGoalAruco.getRotation().x(), tfGoalAruco.getRotation().y(), tfGoalAruco.getRotation().z();
+
+        } catch( tf::TransformException &ex ) {
+            ROS_ERROR("goal_aruco %s", ex.what());
+            r.sleep();
+            continue;
+        }
 
         r.sleep();
-    }    
+    }
 }
 
 void TF_NAV::send_goal() {
@@ -165,6 +176,7 @@ void TF_NAV::send_goal() {
             std::cout << "for exploration";
         }
         std::cout<<"\nInsert 2 to send home position goal "<<std::endl;
+        std::cout<<"\nInsert 3 to send aruco marker goal "<<std::endl;
 //        std::cout<<"Insert your choice"<<std::endl;
         std::cin>>cmd;
 
@@ -223,7 +235,7 @@ void TF_NAV::send_goal() {
             }
             goal.target_pose.header.frame_id = "map";
             goal.target_pose.header.stamp = ros::Time::now();
-            
+
             goal.target_pose.pose.position.x = _home_pos[0];
             goal.target_pose.pose.position.y = _home_pos[1];
             goal.target_pose.pose.position.z = _home_pos[2];
@@ -242,6 +254,42 @@ void TF_NAV::send_goal() {
             ROS_INFO("The mobile robot arrived in the HOME position");
             else
                 ROS_INFO("The base failed to move for some reason");
+        } else if(cmd == 3) {
+            MoveBaseClient ac("move_base", true);
+            while(!ac.waitForServer(ros::Duration(5.0))) {
+                ROS_INFO("Waiting for the move_base action server to come up");
+            }
+            goal.target_pose.header.frame_id = "map";
+            goal.target_pose.header.stamp = ros::Time::now();
+
+            goal.target_pose.pose.position.x = _aruco_goal_pos[0];
+            goal.target_pose.pose.position.y = _aruco_goal_pos[1];
+            goal.target_pose.pose.position.z = _aruco_goal_pos[2];
+
+            goal.target_pose.pose.orientation.w = _aruco_goal_or[0];
+            goal.target_pose.pose.orientation.x = _aruco_goal_or[1];
+            goal.target_pose.pose.orientation.y = _aruco_goal_or[2];
+            goal.target_pose.pose.orientation.z = _aruco_goal_or[3];
+
+            ROS_INFO("Sending Aruco as goal");
+            ac.sendGoal(goal);
+
+            ac.waitForResult();
+
+            if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+                ROS_INFO("The mobile robot arrived in the Aruco position");
+            else
+                ROS_INFO("The base failed to move for some reason");
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
         } else {
             ROS_INFO("Wrong input!");
         }
