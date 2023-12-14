@@ -100,12 +100,13 @@ void TF_NAV::position_pub() {
 
 void TF_NAV::goal_listener() {
     ros::Rate r( 1 );
-    std::vector<tf::TransformListener*> listener;
+    //std::vector<tf::TransformListener*> listener;
+    tf::TransformListener listener;
     std::vector<tf::StampedTransform*> transform;
-    listener.resize(_totalNumberOfGoals);
+    //listener.resize(_totalNumberOfGoals);
     transform.resize(_totalNumberOfGoals);
     for (int i = 0; i < _totalNumberOfGoals; ++i) {
-        listener[i] = new tf::TransformListener();
+        //listener[i] = new tf::TransformListener();
         transform[i] = new tf::StampedTransform();
     }
 
@@ -121,8 +122,8 @@ void TF_NAV::goal_listener() {
         // if it fails, the catch block skips to the next iteration.
         for (int goal_number = 0; goal_number < _totalNumberOfGoals; ++goal_number) {
             try {
-                listener[goal_number]->waitForTransform( "map", "goal_frame_" + std::to_string(goal_number + 1), ros::Time( 0 ), ros::Duration( 10.0 ) );
-                listener[goal_number]->lookupTransform("map", "goal_frame_" + std::to_string(goal_number + 1), ros::Time( 0 ),
+                listener.waitForTransform( "map", "goal_frame_" + std::to_string(goal_number + 1), ros::Time( 0 ), ros::Duration( 10.0 ) );
+                listener.lookupTransform("map", "goal_frame_" + std::to_string(goal_number + 1), ros::Time( 0 ),
                                                        *(transform[goal_number]));
                 if (!hasLogged[goal_number]) {
                     ROS_INFO("transform[%d]: pos (%f, %f, %f), rot (%f, %f, %f, %f)\n", goal_number,
