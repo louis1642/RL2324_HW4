@@ -42,9 +42,8 @@ private:
         Eigen::Vector4d _cur_or;
 
         tf::Transform _tfBaseCamera;    // transformation matrix from camera to base
-        tf::Transform _tfAruco;
-
-
+        tf::Transform _tfAruco;         // pose of the Aruco Marker in camera frame
+        tf::Transform _tfBase;          // current pose of the base footprint
         bool _allowExploration;
         const int _totalNumberOfGoals;
 

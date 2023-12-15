@@ -7,13 +7,6 @@ void TF_NAV::arucoPoseCallback(const geometry_msgs::PoseStamped & msg)
     tf::Quaternion ArucoOrientation(
         msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z,msg.pose.orientation.w);
     _tfAruco = tf::Transform(ArucoOrientation,ArucoPosition);
-
-//    Eigen::Vector3d ar_pos;
-//    Eigen::Vector4d ar_or;
-//    ar_pos << _tfAruco.getOrigin().x(), _tfAruco.getOrigin().y(), _tfAruco.getOrigin().z();
-//    ar_or << _tfAruco.getRotation().w(),  _tfAruco.getRotation().x(), _tfAruco.getRotation().y(), _tfAruco.getRotation().z();
-    // DEBUG
-    // std::cout << std::endl << ar_pos << std::endl << ar_or << std::endl;
 }
 
 TF_NAV::TF_NAV(bool allowExploration, const int totalNumberOfGoals)
@@ -70,6 +63,7 @@ void TF_NAV::tf_listener_fun() {
             continue;
         }
 
+        _tfBase = transform;    // store the tf matrix of base footprint into object data
         _cur_pos << transform.getOrigin().x(), transform.getOrigin().y(), transform.getOrigin().z();
         _cur_or << transform.getRotation().w(),  transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z();
         position_pub();
@@ -175,9 +169,9 @@ void TF_NAV::send_goal() {
         if (_allowExploration) {
             std::cout << "for exploration";
         }
-        std::cout<<"\nInsert 2 to send home position goal "<<std::endl;
+        std::cout<<"\nInsert 2 to send home position goal ";
         std::cout<<"\nInsert 3 to send aruco marker goal "<<std::endl;
-//        std::cout<<"Insert your choice"<<std::endl;
+        std::cout<<"Insert your choice"<<std::endl;
         std::cin>>cmd;
 
         if ( cmd == 1) {
@@ -259,17 +253,19 @@ void TF_NAV::send_goal() {
             while(!ac.waitForServer(ros::Duration(5.0))) {
                 ROS_INFO("Waiting for the move_base action server to come up");
             }
+            // First, send the robot near the Aruco marker, so it can look at the marker
             goal.target_pose.header.frame_id = "map";
             goal.target_pose.header.stamp = ros::Time::now();
 
             goal.target_pose.pose.position.x = _aruco_goal_pos[0];
             goal.target_pose.pose.position.y = _aruco_goal_pos[1];
             goal.target_pose.pose.position.z = _aruco_goal_pos[2];
-
             goal.target_pose.pose.orientation.w = _aruco_goal_or[0];
             goal.target_pose.pose.orientation.x = _aruco_goal_or[1];
             goal.target_pose.pose.orientation.y = _aruco_goal_or[2];
             goal.target_pose.pose.orientation.z = _aruco_goal_or[3];
+
+
 
             ROS_INFO("Sending Aruco as goal");
             ac.sendGoal(goal);
@@ -278,10 +274,50 @@ void TF_NAV::send_goal() {
 
             if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
                 ROS_INFO("The mobile robot arrived in the Aruco position");
-            else
+            else{
                 ROS_INFO("The base failed to move for some reason");
-            
-            
+                return;
+            }
+            // At this point, the robot the Aruco pose is available and the robot has to move 1 meter in front of it
+            tf::Matrix3x3 rotOffset(0,0,-1,-1,0,0,0,1,0);
+            tf::Vector3 posOffset(0,0,1);
+            tf::Transform tfOffset(rotOffset,posOffset);
+
+            tf::Transform tfDesiredPose = _tfBase*_tfBaseCamera*_tfAruco*tfOffset;
+
+            goal.target_pose.header.frame_id = "map";
+            goal.target_pose.header.stamp = ros::Time::now();
+
+            // goal.target_pose.pose.position.x = tfDesiredPose.getOrigin().x();
+            // goal.target_pose.pose.position.y = tfDesiredPose.getOrigin().y();
+            // goal.target_pose.pose.position.z = tfDesiredPose.getOrigin().z();
+//
+            // goal.target_pose.pose.orientation.w = tfDesiredPose.getRotation().w();
+            // goal.target_pose.pose.orientation.x = tfDesiredPose.getRotation().x();
+            // goal.target_pose.pose.orientation.y = tfDesiredPose.getRotation().y();
+            // goal.target_pose.pose.orientation.z = tfDesiredPose.getRotation().z();
+
+            goal.target_pose.pose.position.x = _home_pos[0];
+            goal.target_pose.pose.position.y = _home_pos[1];
+            goal.target_pose.pose.position.z = _home_pos[2];
+
+            goal.target_pose.pose.orientation.w = _home_rot[3];
+            goal.target_pose.pose.orientation.x = _home_rot[0];
+            goal.target_pose.pose.orientation.y = _home_rot[1];
+            goal.target_pose.pose.orientation.z = _home_rot[2];
+
+            ROS_INFO("Sending offset from Aruco as goal");
+            ac.sendGoal(goal);
+
+            ac.waitForResult();
+
+            if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+                ROS_INFO("The mobile robot arrived 1 meter in front of Aruco");
+            else{
+                ROS_INFO("The base failed to move for some reason");
+                return;
+            }
+
             
             
             
