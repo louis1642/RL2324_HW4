@@ -2,26 +2,21 @@
 
 void TF_NAV::arucoPoseCallback(const geometry_msgs::PoseStamped & msg)
 {
-    static bool flag = false;
-    if (!flag) {
-        ros::Rate r(5);
-        flag = true;
-        tf::Vector3 ArucoPosition(
-                msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
-        tf::Quaternion ArucoOrientation(
-                msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
-        tf::Transform tfCameraAruco = tf::Transform(ArucoOrientation, ArucoPosition);
+
+    tf::Vector3 ArucoPosition(
+            msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
+    tf::Quaternion ArucoOrientation(
+            msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
+    tf::Transform tfCameraAruco = tf::Transform(ArucoOrientation, ArucoPosition);
 
 
-        // aruco wrt world frame
-        _tfAruco = _tfBase * _tfBaseCamera * tfCameraAruco;
+    // aruco wrt world frame
+    _tfAruco = _tfBase * _tfBaseCamera * tfCameraAruco;
 
-        static tf::TransformBroadcaster arucoTfBroadcaster;
-        arucoTfBroadcaster.sendTransform(
-                tf::StampedTransform(tfCameraAruco, ros::Time::now(), "map", "tf_marker_frame"));
-        r.sleep();
-        flag = false;
-    }
+    static tf::TransformBroadcaster arucoTfBroadcaster;
+    arucoTfBroadcaster.sendTransform(
+            tf::StampedTransform(tfCameraAruco, ros::Time::now(), "map", "tf_marker_frame"));
+
 }
 
 TF_NAV::TF_NAV(bool allowExploration, const int totalNumberOfGoals)
