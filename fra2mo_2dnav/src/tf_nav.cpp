@@ -7,6 +7,21 @@ void TF_NAV::arucoPoseCallback(const geometry_msgs::PoseStamped & msg)
     tf::Quaternion ArucoOrientation(
         msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z,msg.pose.orientation.w);
     _tfAruco = tf::Transform(ArucoOrientation,ArucoPosition);
+
+
+    // aruco wrt world frame
+    tf::Matrix3x3 rotOffset(0,0,-1,-1,0,0,0,1,0);
+    tf::Vector3 posOffset(0,0,0);
+    tf::Transform tfOffset(rotOffset,posOffset);
+    tf::Transform tfArucoWrtWorld = _tfBase*_tfBaseCamera*_tfAruco*tfOffset;
+//    tf::Transform tfArucoWrtWorld = _tfBase*_tfBaseCamera*_tfAruco*tfOffset;
+//    tf::Transform tfArucoWorld;
+//
+//    tfArucoWorld.setOrigin();
+
+
+    static tf::TransformBroadcaster arucoTfBroadcaster;
+    arucoTfBroadcaster.sendTransform(tf::StampedTransform(tfArucoWrtWorld, ros::Time::now(), "map", "aruco_marker_aaaaa"));
 }
 
 TF_NAV::TF_NAV(bool allowExploration, const int totalNumberOfGoals)
@@ -219,6 +234,8 @@ void TF_NAV::send_goal() {
                 } else {
                     ROS_INFO("The base failed to move for some reason");
                     // skip to the next iteration (skip to the next goal)
+                    // or retry the same goal?
+                    // --goal_index;
                     continue;
                 }
             }
