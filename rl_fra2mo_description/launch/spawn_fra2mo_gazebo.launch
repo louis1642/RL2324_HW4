@@ -7,13 +7,13 @@
   <arg name="gui" default="false"/>
   <arg name="headless" default="false"/>
   <arg name="debug" default="false"/>
-<!--  <arg name="x_pos" default="-3.0"/>-->
-<!--  <arg name="y_pos" default="5.0"/>-->
-<!--  <arg name="z_pos" default="0.1"/>-->
-<!--  debug-->
-  <arg name="x_pos" default="-15.0"/>
-  <arg name="y_pos" default="8.0"/>
+  <arg name="x_pos" default="-3.0"/>
+  <arg name="y_pos" default="5.0"/>
   <arg name="z_pos" default="0.1"/>
+<!--  debug-->
+<!--  <arg name="x_pos" default="-15.0"/>
+  <arg name="y_pos" default="8.0"/>
+  <arg name="z_pos" default="0.1"/>-->
   <!-- yaw angle-->
   <arg name="yaw" default="3.14"/>
   <env name="GAZEBO_MODEL_PATH" value="$(find rl_racefield)/models:$(optenv GAZEBO_MODEL_PATH)"/>
