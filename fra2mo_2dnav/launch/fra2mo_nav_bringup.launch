@@ -4,5 +4,6 @@
     <include file="$(find rl_fra2mo_description)/launch/gmapping.launch"/>
     <include file="$(find fra2mo_2dnav)/launch/move_base.launch"/>
     <include file="$(find aruco_ros)/launch/usb_cam_aruco.launch"/>
-
+    <!-- Camera -->
+    <node name="rqt_image_view" pkg="rqt_image_view"  type="rqt_image_view" />
 </launch>

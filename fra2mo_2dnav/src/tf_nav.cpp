@@ -10,15 +10,15 @@ void TF_NAV::arucoPoseCallback(const geometry_msgs::PoseStamped & msg)
                 msg.pose.position.x, msg.pose.position.y, msg.pose.position.z);
         tf::Quaternion ArucoOrientation(
                 msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w);
-        _tfAruco = tf::Transform(ArucoOrientation, ArucoPosition);
+        tf::Transform tfCameraAruco = tf::Transform(ArucoOrientation, ArucoPosition);
 
 
         // aruco wrt world frame
-        tf::Transform tfArucoWrtWorld = _tfBase * _tfBaseCamera * _tfAruco;
+        _tfAruco = _tfBase * _tfBaseCamera * tfCameraAruco;
 
         static tf::TransformBroadcaster arucoTfBroadcaster;
         arucoTfBroadcaster.sendTransform(
-                tf::StampedTransform(tfArucoWrtWorld, ros::Time::now(), "map", "tf_marker_frame"));
+                tf::StampedTransform(tfCameraAruco, ros::Time::now(), "map", "tf_marker_frame"));
         r.sleep();
         flag = false;
     }
@@ -303,7 +303,7 @@ void TF_NAV::send_goal() {
             tf::Transform tfOffset(rotOffset,posOffset);
 
             ros::Duration(2.0).sleep();
-            tf::Transform tfDesiredPose = _tfBase*_tfBaseCamera*_tfAruco*tfOffset;
+            tf::Transform tfDesiredPose = _tfAruco*tfOffset;
 
             Eigen::Vector3d des_pos;
             Eigen::Vector4d des_or;
@@ -321,7 +321,7 @@ void TF_NAV::send_goal() {
 
             goal.target_pose.pose.position.x = tfDesiredPose.getOrigin().x();
             goal.target_pose.pose.position.y = tfDesiredPose.getOrigin().y();
-            goal.target_pose.pose.position.z = 0.1;
+            goal.target_pose.pose.position.z = tfDesiredPose.getOrigin().z();
 
             goal.target_pose.pose.orientation.w = std::round(tfDesiredPose.getRotation().w()*10)/10;
             goal.target_pose.pose.orientation.x = std::round(tfDesiredPose.getRotation().x()*10)/10;

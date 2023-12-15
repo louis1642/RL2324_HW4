@@ -48,7 +48,6 @@
 <!-- RVIZ  -->
 <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rl_fra2mo_description)/conf/fra2mo_conf_map.rviz" required="true" />
 
-<!-- Camera -->
-  <node name="rqt_image_view" pkg="rqt_image_view"  type="rqt_image_view" />
+
 
 </launch>
