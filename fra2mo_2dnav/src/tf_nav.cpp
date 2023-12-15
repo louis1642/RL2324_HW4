@@ -15,7 +15,7 @@ void TF_NAV::arucoPoseCallback(const geometry_msgs::PoseStamped & msg)
 
     static tf::TransformBroadcaster arucoTfBroadcaster;
     arucoTfBroadcaster.sendTransform(
-            tf::StampedTransform(tfCameraAruco, ros::Time::now(), "map", "tf_marker_frame"));
+            tf::StampedTransform(_tfAruco, ros::Time::now(), "map", "tf_marker_frame"));
 
 }
 
@@ -316,7 +316,7 @@ void TF_NAV::send_goal() {
 
             goal.target_pose.pose.position.x = tfDesiredPose.getOrigin().x();
             goal.target_pose.pose.position.y = tfDesiredPose.getOrigin().y();
-            goal.target_pose.pose.position.z = tfDesiredPose.getOrigin().z();
+            goal.target_pose.pose.position.z = 0.1;
 
             goal.target_pose.pose.orientation.w = std::round(tfDesiredPose.getRotation().w()*10)/10;
             goal.target_pose.pose.orientation.x = std::round(tfDesiredPose.getRotation().x()*10)/10;
