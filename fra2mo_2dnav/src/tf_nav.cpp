@@ -224,8 +224,10 @@ void TF_NAV::send_goal() {
 
                     ROS_INFO("Sending goal %d", goal_index);
                 }
+                // wait 0.1 seconds to prevent a racing condition btw ac.sendGoal() and ac.waitForResult()
+                ros::Duration(0.1).sleep();
                 ac.sendGoal(goal);
-
+//                ros::Duration(1).sleep();
                 ac.waitForResult();
 
                 if (ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
