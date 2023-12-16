@@ -15,7 +15,7 @@
   <arg name="y_pos" default="8.0"/>
   <arg name="z_pos" default="0.1"/>-->
   <!-- yaw angle-->
-  <arg name="yaw" default="3.14"/>
+  <arg name="yaw" default="-1.57"/>
   <env name="GAZEBO_MODEL_PATH" value="$(find rl_racefield)/models:$(optenv GAZEBO_MODEL_PATH)"/>
 
   <!-- We resume the logic in empty_world.launch -->
