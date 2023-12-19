@@ -48,6 +48,7 @@ TF_NAV::TF_NAV(bool allowExploration, const int totalNumberOfGoals)
     tf::StampedTransform tfBaseCamera;
 
     try {
+        // store the camera tf wrt the base frame
         listener.waitForTransform( "base_footprint", "camera_depth_optical_frame", ros::Time(0), ros::Duration(10.0) );
         listener.lookupTransform( "base_footprint", "camera_depth_optical_frame", ros::Time(0), tfBaseCamera );
     } catch ( tf::TransformException &ex ) {
@@ -65,14 +66,14 @@ void TF_NAV::tf_listener_fun() {
     tf::TransformListener listener;
     tf::StampedTransform transform;
 
-    while ( ros::ok() ) {
+    while (ros::ok()) {
         try {
-            listener.waitForTransform( "map", "base_footprint", ros::Time(0), ros::Duration(10.0) );
-            listener.lookupTransform( "map", "base_footprint", ros::Time(0), transform );
-        } catch ( tf::TransformException &ex ) {
+            listener.waitForTransform("map", "base_footprint", ros::Time(0), ros::Duration(10.0));
+            listener.lookupTransform("map", "base_footprint", ros::Time(0), transform);
+        } catch (tf::TransformException& ex) {
             ROS_ERROR("%s", ex.what());
             r.sleep();
-            // if it fails, skipt to the next iteration
+            // if it fails, skip to the next iteration
             continue;
         }
 
@@ -124,11 +125,12 @@ void TF_NAV::goal_listener() {
         // if it fails, the catch block skips to the next iteration.
         for (int goal_number = 0; goal_number < _totalNumberOfGoals; ++goal_number) {
             try {
+                // store the tfs of the goals
                 listener.waitForTransform( "map", "goal_frame_" + std::to_string(goal_number + 1), ros::Time( 0 ), ros::Duration( 10.0 ) );
                 listener.lookupTransform("map", "goal_frame_" + std::to_string(goal_number + 1), ros::Time( 0 ),
                                                        *(transform[goal_number]));
                 if (!hasLogged[goal_number]) {
-                    // print info about the retrieved transform
+                    // print info about the retrieved transform (just the first time)
                     ROS_INFO("transform[%d]: pos (%f, %f, %f), rot (%f, %f, %f, %f)\n", goal_number,
                              transform[goal_number]->getOrigin().x(),
                              transform[goal_number]->getOrigin().y(),
@@ -154,14 +156,15 @@ void TF_NAV::goal_listener() {
 
         // acquire the goal to move the robot near the aruco marker
         try {
-            listener.waitForTransform( "map", "goal_marker_frame", ros::Time( 0 ), ros::Duration( 10.0 ) );
-            listener.lookupTransform("map", "goal_marker_frame", ros::Time( 0 ),
+            listener.waitForTransform("map", "goal_marker_frame", ros::Time(0), ros::Duration(10.0));
+            listener.lookupTransform("map", "goal_marker_frame", ros::Time(0),
                                      tfGoalAruco);
 
             _aruco_goal_pos << tfGoalAruco.getOrigin().x(), tfGoalAruco.getOrigin().y(), tfGoalAruco.getOrigin().z();
-            _aruco_goal_or << tfGoalAruco.getRotation().w(),  tfGoalAruco.getRotation().x(), tfGoalAruco.getRotation().y(), tfGoalAruco.getRotation().z();
+            _aruco_goal_or
+                    << tfGoalAruco.getRotation().w(), tfGoalAruco.getRotation().x(), tfGoalAruco.getRotation().y(), tfGoalAruco.getRotation().z();
 
-        } catch ( tf::TransformException &ex ) {
+        } catch (tf::TransformException& ex) {
             ROS_ERROR("goal_aruco %s", ex.what());
             r.sleep();
             // skips to the next iteration of the while (ros::ok()) loop
@@ -173,13 +176,13 @@ void TF_NAV::goal_listener() {
 }
 
 void TF_NAV::send_goal() {
-    ros::Rate r( 5 );
+    ros::Rate r(5);
     int cmd;
     move_base_msgs::MoveBaseGoal goal;
 
-    while ( ros::ok() ) {
+    while (ros::ok()) {
         // prompt the user for the command
-        std::cout<<"\nInsert 1 to send goal from TF ";
+        std::cout << "\nInsert 1 to send goal from TF ";
         if (_allowExploration) {
             // distinguish between the 4 goals in the hw and the n goals for exploration
             std::cout << "for exploration";
@@ -189,7 +192,7 @@ void TF_NAV::send_goal() {
         std::cout << "Insert your choice" << std::endl;
         std::cin >> cmd;
 
-        if ( cmd == 1) {        // goals from tf
+        if (cmd == 1) {        // goals from tf
             MoveBaseClient ac("move_base", true);
             while (!ac.waitForServer(ros::Duration(5.0))) {
                 ROS_INFO("Waiting for the move_base action server to come up");
@@ -232,19 +235,20 @@ void TF_NAV::send_goal() {
 
                 if (ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
                     // conditional operator to print the correct message
-                    ROS_INFO("The mobile robot arrived in the TF goal number %d", (!_allowExploration) ? goalOrder[goal_index] : goal_index);
+                    ROS_INFO("The mobile robot arrived in the TF goal number %d",
+                             (!_allowExploration) ? goalOrder[goal_index] : goal_index);
                 } else {
                     ROS_INFO("The base failed to move for some reason");
                     // skip to the next iteration (skip to the next goal)
                     // or retry the same goal?
                     // --goal_index;
-                    // best would be to send another goal to try to get the robot unstuck.. too long to implement
+                    // best would be to send another goal to try to get the robot unstuck... too long to implement
                     continue;
                 }
             }
-        } else if ( cmd == 2 ) {        // return home
+        } else if (cmd == 2) {        // return home
             MoveBaseClient ac("move_base", true);
-            while(!ac.waitForServer(ros::Duration(5.0))) {
+            while (!ac.waitForServer(ros::Duration(5.0))) {
                 ROS_INFO("Waiting for the move_base action server to come up");
             }
             goal.target_pose.header.frame_id = "map";
@@ -271,7 +275,7 @@ void TF_NAV::send_goal() {
             }
         } else if (cmd == 3) {      // visual task
             MoveBaseClient ac("move_base", true);
-            while(!ac.waitForServer(ros::Duration(5.0))) {
+            while (!ac.waitForServer(ros::Duration(5.0))) {
                 ROS_INFO("Waiting for the move_base action server to come up");
             }
             // First, send the robot near the Aruco marker, so it can look at the marker
@@ -291,7 +295,7 @@ void TF_NAV::send_goal() {
 
             ac.waitForResult();
 
-            if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
+            if (ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) {
                 ROS_INFO("The mobile robot arrived in the Aruco near position");
             } else {
                 ROS_INFO("The base failed to move for some reason");
@@ -300,23 +304,25 @@ void TF_NAV::send_goal() {
             // At this point, the Aruco pose is available and the robot has to move 1 meter in front of it
             //tf::Matrix3x3 rotOffset(0,-1,0, 0,0,1,  -1,0,0);
             tf::Quaternion rotOffset(-0.5, 0.5, 0.5, 0.5);
-            tf::Vector3 posOffset(0,-_tfBaseCamera.getOrigin().z(),1);
-            tf::Transform tfOffset(rotOffset,posOffset);
+            tf::Vector3 posOffset(0, -_tfBaseCamera.getOrigin().z(), 1);
+            tf::Transform tfOffset(rotOffset, posOffset);
 
             ros::Duration(2.0).sleep();
-            tf::Transform tfDesiredPose = _tfAruco*tfOffset;
+            tf::Transform tfDesiredPose = _tfAruco * tfOffset;
 
             Eigen::Vector3d des_pos;
             Eigen::Vector4d des_or;
             des_pos << tfDesiredPose.getOrigin().x(), tfDesiredPose.getOrigin().y(), tfDesiredPose.getOrigin().z();
-            des_or << tfDesiredPose.getRotation().w(),  tfDesiredPose.getRotation().x(), tfDesiredPose.getRotation().y(), tfDesiredPose.getRotation().z();
+            des_or
+                    << tfDesiredPose.getRotation().w(), tfDesiredPose.getRotation().x(), tfDesiredPose.getRotation().y(), tfDesiredPose.getRotation().z();
             std::cout << "desired orientation:\n" << des_or << std::endl;
             std::cout << "aruco goal orientation:\n" << _aruco_goal_or << std::endl;
 
 
             // broadcast the tf to visualize it in RViz
             static tf::TransformBroadcaster arucoTfBroadcaster;
-            arucoTfBroadcaster.sendTransform(tf::StampedTransform(tfDesiredPose, ros::Time::now(), "map", "offset_goal_frame"));
+            arucoTfBroadcaster.sendTransform(
+                    tf::StampedTransform(tfDesiredPose, ros::Time::now(), "map", "offset_goal_frame"));
 
             goal.target_pose.header.frame_id = "map";
             goal.target_pose.header.stamp = ros::Time::now();
@@ -327,10 +333,10 @@ void TF_NAV::send_goal() {
 
             // round to first decimal digit. This is done to avoid the robot thinking
             //  a certain trajectory is unfeasible because of numerical error
-            goal.target_pose.pose.orientation.w = std::round(tfDesiredPose.getRotation().w()*10)/10;
-            goal.target_pose.pose.orientation.x = std::round(tfDesiredPose.getRotation().x()*10)/10;
-            goal.target_pose.pose.orientation.y = std::round(tfDesiredPose.getRotation().y()*10)/10;
-            goal.target_pose.pose.orientation.z = std::round(tfDesiredPose.getRotation().z()*10)/10;
+            goal.target_pose.pose.orientation.w = std::round(tfDesiredPose.getRotation().w() * 10) / 10;
+            goal.target_pose.pose.orientation.x = std::round(tfDesiredPose.getRotation().x() * 10) / 10;
+            goal.target_pose.pose.orientation.y = std::round(tfDesiredPose.getRotation().y() * 10) / 10;
+            goal.target_pose.pose.orientation.z = std::round(tfDesiredPose.getRotation().z() * 10) / 10;
 
             ROS_INFO("Sending offset from Aruco as goal");
             ac.sendGoal(goal);
@@ -349,7 +355,7 @@ void TF_NAV::send_goal() {
         }
         r.sleep();
     }
-    
+
 }
 
 void TF_NAV::run() {
